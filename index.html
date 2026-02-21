@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Analisis Butir Soal</title>
+    <!-- Tailwind CSS untuk styling yang modern dan responsif -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS untuk ekspor Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- jsPDF untuk ekspor PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        /* Custom scrollbar untuk tabel yang lebar */
+        .table-container::-webkit-scrollbar {
+            height: 10px;
+            width: 10px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 5px;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 5px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        
+        .tab-active {
+            border-bottom: 2px solid #3b82f6;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Navbar/Header -->
+    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center gap-2">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <h1 class="text-xl font-bold text-slate-800">Analisis Butir Soal Edu</h1>
+                </div>
+            </div>
+            
+            <!-- Tabs Navigation -->
+            <div class="flex space-x-1 overflow-x-auto" id="tabs-container">
+                <button onclick="switchTab('beranda')" id="tab-btn-beranda" class="tab-btn tab-active px-4 py-3 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors whitespace-nowrap">
+                    Beranda & Data
+                </button>
+                <!-- Dynamic tabs will be added here -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Pesan Notifikasi (Toast) -->
+        <div id="toast" class="hidden fixed top-20 right-5 bg-emerald-500 text-white px-6 py-3 rounded shadow-lg transition-opacity duration-300 z-50">
+            <span id="toast-message">Notifikasi</span>
+        </div>
+
+        <!-- SECTION: BERANDA -->
+        <section id="tab-beranda" class="tab-content block animate-fade-in">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <!-- Identitas Form -->
+                <div class="md:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h2 class="text-lg font-semibold mb-4 text-slate-800 border-b pb-2">Identitas Umum</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Nama Sekolah</label>
+                            <input type="text" id="input-sekolah" value="SDIT INSANTAMA" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Judul Analisis</label>
+                            <input type="text" id="input-judul" value="Analisis Butir Soal Ulangan Blok 1" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Tahun Pelajaran</label>
+                            <input type="text" id="input-tapel" value="2025-2026" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 mb-1">Semester</label>
+                                <select id="input-semester" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="Ganjil">Ganjil</option>
+                                    <option value="Genap" selected>Genap</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 mb-1">Kelas</label>
+                                <input type="text" id="input-kelas" value="IIC" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Siswa & Buat Mapel -->
+                <div class="md:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h2 class="text-lg font-semibold mb-4 text-slate-800 border-b pb-2">Daftar Siswa & Manajemen Mapel</h2>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-slate-600 mb-2">Paste Nama Siswa (Dari Excel, 1 baris 1 nama)</label>
+                        <textarea id="input-siswa" rows="8" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm" placeholder="ADZKIYA YUMNA HUMAIRA&#10;ALDEBARAN MUHAMMAD MARPAUNG&#10;AMRU RAYYANKA AKBAR"></textarea>
+                        <p class="text-xs text-slate-500 mt-1" id="student-count">Jumlah Siswa: 0</p>
+                    </div>
+
+                    <div class="flex items-end gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                        <div class="flex-grow">
+                            <label class="block text-sm font-medium text-blue-800 mb-1">Tambah Mata Pelajaran Baru</label>
+                            <input type="text" id="input-mapel-baru" placeholder="Contoh: Matematika, PAI, Tematik..." class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button onclick="buatTabMapel()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            Buat Tab Mapel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Container for dynamically generated Mapel Tabs -->
+        <div id="mapel-containers">
+            <!-- Isi tab mapel akan digenerate di sini -->
+        </div>
+
+    </main>
+
+    <script>
+        // Data Global Application State
+        const AppData = {
+            siswa: [],
+            mapels: {} // Format: { "PAI": [ {nama: "...", pg: [], isian: [], nilai: 0, kategori: ""} ] }
+        };
+
+        // DOM Elements
+        const studentTextarea = document.getElementById('input-siswa');
+        const studentCount = document.getElementById('student-count');
+        const tabsContainer = document.getElementById('tabs-container');
+        const mapelContainers = document.getElementById('mapel-containers');
+
+        // Kriteria Kategori Kelulusan
+        function getKategori(nilai) {
+            if (nilai <= 40) return { label: "Remedial Total", color: "bg-red-100 text-red-800" };
+            if (nilai <= 72) return { label: "Remedial Parsial", color: "bg-orange-100 text-orange-800" };
+            if (nilai <= 89) return { label: "Lulus", color: "bg-green-100 text-green-800" };
+            return { label: "Pengayaan", color: "bg-blue-100 text-blue-800" };
+        }
+
+        // Listener untuk text area siswa
+        studentTextarea.addEventListener('input', updateStudentList);
+
+        function updateStudentList() {
+            const rawText = studentTextarea.value;
+            AppData.siswa = rawText.split('\n').map(name => name.trim()).filter(name => name !== '');
+            studentCount.innerText = `Jumlah Siswa: ${AppData.siswa.length}`;
+        }
+
+        // Fungsi Toast
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            toast.className = `fixed top-20 right-5 px-6 py-3 rounded shadow-lg transition-opacity duration-300 z-50 ${isError ? 'bg-red-500' : 'bg-emerald-500'} text-white`;
+            msgEl.innerText = message;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Berpindah Tab
+        function switchTab(tabId) {
+            // Sembunyikan semua content
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('block');
+                el.classList.add('hidden');
+            });
+            // Hapus status active di tab buttons
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('tab-active');
+            });
+
+            // Tampilkan content yang dipilih
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).classList.add('block');
+            
+            // Beri status active di button yang dipilih
+            document.getElementById(`tab-btn-${tabId}`).classList.add('tab-active');
+        }
+
+        // Membuat Tab Mata Pelajaran Baru
+        function buatTabMapel() {
+            updateStudentList();
+            if (AppData.siswa.length === 0) {
+                showToast("Daftar siswa kosong! Silakan isi daftar siswa di Beranda terlebih dahulu.", true);
+                return;
+            }
+
+            const mapelInput = document.getElementById('input-mapel-baru');
+            const mapelNameRaw = mapelInput.value.trim();
+            
+            if (mapelNameRaw === '') {
+                showToast("Nama mata pelajaran tidak boleh kosong!", true);
+                return;
+            }
+
+            const mapelId = mapelNameRaw.toLowerCase().replace(/[^a-z0-9]/g, '-');
+            
+            if (AppData.mapels[mapelId]) {
+                showToast("Tab Mata Pelajaran ini sudah ada!", true);
+                return;
+            }
+
+            // Simpan Data State Awal
+            AppData.mapels[mapelId] = {
+                name: mapelNameRaw,
+                data: AppData.siswa.map(nama => ({
+                    nama: nama,
+                    pg: Array(10).fill(1), // Default nilai full untuk mempermudah (10 soal)
+                    isian: Array(5).fill(3) // Default nilai full untuk isian (5 soal)
+                }))
+            };
+
+            // 1. Buat Button Tab
+            const btnHtml = `
+                <button onclick="switchTab('${mapelId}')" id="tab-btn-${mapelId}" class="tab-btn px-4 py-3 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors whitespace-nowrap flex items-center gap-2">
+                    ${mapelNameRaw}
+                    <span class="bg-slate-200 text-slate-600 rounded-full w-4 h-4 flex items-center justify-center text-[10px]" onclick="hapusTab(event, '${mapelId}')" title="Hapus Tab">✕</span>
+                </button>
+            `;
+            tabsContainer.insertAdjacentHTML('beforeend', btnHtml);
+
+            // 2. Buat Konten Container Mapel
+            const judulAnalisis = document.getElementById('input-judul').value;
+            const contentHtml = `
+                <section id="tab-${mapelId}" class="tab-content hidden animate-fade-in">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                            <div>
+                                <h2 class="text-2xl font-bold text-slate-800">${judulAnalisis}: ${mapelNameRaw}</h2>
+                                <p class="text-slate-500 text-sm mt-1" id="subtitle-${mapelId}"></p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="eksporExcel('${mapelId}')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-medium text-sm flex items-center gap-2 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
+                                    Unduh Excel
+                                </button>
+                                <button onclick="eksporPDF('${mapelId}')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-medium text-sm flex items-center gap-2 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                    Unduh PDF
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- INPUT CEPAT / FILTER NILAI SALAH -->
+                        <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100 mb-6">
+                            <h3 class="text-sm font-bold text-indigo-800 mb-3 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                Input Cepat Nilai (Fokus Edit Nomor Soal)
+                            </h3>
+                            <div class="flex flex-wrap items-end gap-4">
+                                <div class="flex-grow min-w-[200px]">
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Pilih Siswa</label>
+                                    <select id="quick-siswa-${mapelId}" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                                        ${AppData.siswa.map((nama, idx) => `<option value="${idx}">${nama}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div class="w-48">
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Nomor Soal (koma: 1,12,14)</label>
+                                    <input type="text" id="quick-soal-${mapelId}" placeholder="Misal: 1, 12, 14" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                                </div>
+                                <div class="w-32">
+                                    <label class="block text-xs font-medium text-slate-600 mb-1">Set Nilai (Ubah ke)</label>
+                                    <input type="number" id="quick-nilai-${mapelId}" value="0" min="0" max="3" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                                </div>
+                                <button onclick="terapkanInputCepat('${mapelId}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded font-medium text-sm transition-colors mb-0.5">Terapkan</button>
+                            </div>
+                        </div>
+
+                        <div class="table-container overflow-x-auto pb-4">
+                            <table class="w-full text-sm text-left border-collapse min-w-[1200px]" id="tabel-${mapelId}">
+                                <thead class="text-xs text-slate-700 uppercase bg-slate-100 border-y border-slate-300">
+                                    <tr>
+                                        <th rowspan="2" class="px-3 py-3 border border-slate-300 text-center w-10">NO.</th>
+                                        <th rowspan="2" class="px-4 py-3 border border-slate-300 min-w-[200px] sticky left-0 bg-slate-100 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Nama Siswa</th>
+                                        <th colspan="10" class="px-2 py-2 border border-slate-300 text-center bg-blue-50">Soal Pilihan Ganda (Skor Maks 1)</th>
+                                        <th colspan="5" class="px-2 py-2 border border-slate-300 text-center bg-purple-50">Isian Singkat (Skor Maks 3)</th>
+                                        <th rowspan="2" class="px-3 py-3 border border-slate-300 text-center w-16 bg-slate-50">Nilai</th>
+                                        <th rowspan="2" class="px-3 py-3 border border-slate-300 text-center min-w-[150px] bg-slate-50">Kategori</th>
+                                    </tr>
+                                    <tr>
+                                        <!-- Header PG 1-10 -->
+                                        ${Array.from({length: 10}, (_, i) => `<th class="px-1 py-1 border border-slate-300 text-center w-10">${i+1}</th>`).join('')}
+                                        <!-- Header Isian 11-15 -->
+                                        ${Array.from({length: 5}, (_, i) => `<th class="px-1 py-1 border border-slate-300 text-center w-10">${i+11}</th>`).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-${mapelId}">
+                                    <!-- Baris data siswa dirender disini via JS -->
+                                </tbody>
+                                <tfoot id="tfoot-${mapelId}" class="bg-slate-50 font-medium">
+                                    <!-- Rata-rata & Kesukaran -->
+                                </tfoot>
+                            </table>
+                        </div>
+                        
+                        <div class="mt-4 text-xs text-slate-500 flex gap-4">
+                            <span><b>Indikator Kesukaran:</b> (M) Mudah > 0.70</span>
+                            <span>(SD) Sedang 0.31 - 0.70</span>
+                            <span>(S) Sulit <= 0.30</span>
+                        </div>
+                    </div>
+                </section>
+            `;
+            mapelContainers.insertAdjacentHTML('beforeend', contentHtml);
+
+            // Render Table Data
+            renderTableData(mapelId);
+
+            // Kosongkan input form dan pindah tab
+            mapelInput.value = '';
+            showToast(`Mapel ${mapelNameRaw} berhasil ditambahkan!`);
+            switchTab(mapelId);
+        }
+
+        function hapusTab(event, mapelId) {
+            event.stopPropagation(); // Mencegah pindah tab saat klik hapus
+            if(confirm("Yakin ingin menghapus tab mata pelajaran ini beserta datanya?")) {
+                delete AppData.mapels[mapelId];
+                document.getElementById(`tab-btn-${mapelId}`).remove();
+                document.getElementById(`tab-${mapelId}`).remove();
+                switchTab('beranda');
+                showToast("Tab berhasil dihapus");
+            }
+        }
+
+        // Render Data Tabel Berdasarkan State
+        function renderTableData(mapelId) {
+            const tbody = document.getElementById(`tbody-${mapelId}`);
+            const mapelData = AppData.mapels[mapelId].data;
+            
+            // Set Subtitle Identitas
+            const sekolah = document.getElementById('input-sekolah').value;
+            const tapel = document.getElementById('input-tapel').value;
+            const smt = document.getElementById('input-semester').value;
+            const kls = document.getElementById('input-kelas').value;
+            document.getElementById(`subtitle-${mapelId}`).innerText = `${sekolah} | Kelas: ${kls} | Semester: ${smt} | TA: ${tapel}`;
+
+            let html = '';
+            mapelData.forEach((siswa, index) => {
+                html += `<tr class="bg-white border-b hover:bg-slate-50 transition-colors">`;
+                html += `<td class="border border-slate-300 px-2 py-2 text-center text-slate-500">${index + 1}</td>`;
+                html += `<td class="border border-slate-300 px-4 py-2 font-medium sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] truncate" title="${siswa.nama}">${siswa.nama}</td>`;
+                
+                // Input PG
+                siswa.pg.forEach((val, i) => {
+                    html += `<td class="border border-slate-300 p-1 text-center">
+                        <input type="number" min="0" max="1" value="${val}" 
+                        class="w-8 h-8 text-center border rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-slate-700"
+                        onchange="updateNilai('${mapelId}', ${index}, 'pg', ${i}, this.value)">
+                    </td>`;
+                });
+
+                // Input Isian
+                siswa.isian.forEach((val, i) => {
+                    html += `<td class="border border-slate-300 p-1 text-center bg-slate-50">
+                        <input type="number" min="0" max="3" value="${val}" 
+                        class="w-8 h-8 text-center border rounded focus:border-purple-500 focus:ring-1 focus:ring-purple-500 outline-none text-slate-700"
+                        onchange="updateNilai('${mapelId}', ${index}, 'isian', ${i}, this.value)">
+                    </td>`;
+                });
+
+                html += `<td class="border border-slate-300 px-2 py-2 text-center font-bold text-lg" id="nilai-${mapelId}-${index}">100</td>`;
+                html += `<td class="border border-slate-300 px-2 py-2 text-center text-xs font-semibold" id="kategori-${mapelId}-${index}">
+                            <span class="px-2 py-1 rounded-full bg-blue-100 text-blue-800">Pengayaan</span>
+                         </td>`;
+                html += `</tr>`;
+            });
+
+            tbody.innerHTML = html;
+            
+            // Hitung Awal
+            mapelData.forEach((_, index) => kalkulasiBaris(mapelId, index));
+            kalkulasiFooter(mapelId);
+        }
+
+        // Update State & Recalculate
+        function updateNilai(mapelId, siswaIdx, jenis, soalIdx, val) {
+            let numVal = parseInt(val) || 0;
+            
+            // Validasi Maksimal
+            if (jenis === 'pg' && numVal > 1) numVal = 1;
+            if (jenis === 'isian' && numVal > 3) numVal = 3;
+            if (numVal < 0) numVal = 0;
+
+            AppData.mapels[mapelId].data[siswaIdx][jenis][soalIdx] = numVal;
+            kalkulasiBaris(mapelId, siswaIdx);
+            kalkulasiFooter(mapelId);
+        }
+
+        // Terapkan Input Cepat (Fokus Nomor Salah)
+        function terapkanInputCepat(mapelId) {
+            const siswaIdx = parseInt(document.getElementById(`quick-siswa-${mapelId}`).value);
+            const soalRaw = document.getElementById(`quick-soal-${mapelId}`).value;
+            const targetNilai = parseInt(document.getElementById(`quick-nilai-${mapelId}`).value) || 0;
+
+            if(!soalRaw.trim()) {
+                showToast("Masukkan nomor soal!", true);
+                return;
+            }
+
+            // Parsing: pisahkan dengan koma, hilangkan spasi, ubah ke integer, dan ambil yang valid (1-15)
+            const nomorSoalArr = soalRaw.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n >= 1 && n <= 15);
+            
+            if(nomorSoalArr.length === 0) {
+                showToast("Format nomor soal tidak valid!", true);
+                return;
+            }
+
+            let appliedCount = 0;
+            const siswaData = AppData.mapels[mapelId].data[siswaIdx];
+
+            nomorSoalArr.forEach(nomor => {
+                if (nomor >= 1 && nomor <= 10) {
+                    // PG (Soal 1-10) -> array index 0-9
+                    let validNilai = Math.min(targetNilai, 1);
+                    siswaData.pg[nomor - 1] = validNilai;
+                    appliedCount++;
+                } else if (nomor >= 11 && nomor <= 15) {
+                    // Isian (Soal 11-15) -> array index 0-4
+                    let validNilai = Math.min(targetNilai, 3);
+                    siswaData.isian[nomor - 11] = validNilai;
+                    appliedCount++;
+                }
+            });
+
+            renderTableData(mapelId); // Re-render tabel (sudah otomatis kalkulasi ulang)
+            
+            document.getElementById(`quick-soal-${mapelId}`).value = ''; // Reset input soal setelah terapkan
+            showToast(`${appliedCount} nilai berhasil diperbarui untuk ${siswaData.nama}`);
+        }
+
+        // Kalkulasi Nilai Akhir Per Siswa
+        function kalkulasiBaris(mapelId, siswaIdx) {
+            const siswa = AppData.mapels[mapelId].data[siswaIdx];
+            const sumPG = siswa.pg.reduce((a, b) => a + b, 0);
+            const sumIsian = siswa.isian.reduce((a, b) => a + b, 0);
+            
+            const totalSkor = sumPG + sumIsian;
+            const skorMaksimal = (10 * 1) + (5 * 3); // 10 + 15 = 25
+            
+            const nilaiAkhir = Math.round((totalSkor / skorMaksimal) * 100);
+            
+            siswa.nilai = nilaiAkhir;
+            
+            const tdNilai = document.getElementById(`nilai-${mapelId}-${siswaIdx}`);
+            const tdKategori = document.getElementById(`kategori-${mapelId}-${siswaIdx}`);
+            
+            tdNilai.innerText = nilaiAkhir;
+            
+            const katInfo = getKategori(nilaiAkhir);
+            siswa.kategori = katInfo.label;
+            
+            tdKategori.innerHTML = `<span class="px-2 py-1 rounded-full text-[10px] ${katInfo.color} block w-full whitespace-nowrap">${katInfo.label}</span>`;
+        }
+
+        // Kalkulasi Tingkat Kesukaran Soal di Footer
+        function kalkulasiFooter(mapelId) {
+            const mapelData = AppData.mapels[mapelId].data;
+            const jmlSiswa = mapelData.length;
+            
+            if (jmlSiswa === 0) return;
+
+            let totalPG = Array(10).fill(0);
+            let totalIsian = Array(5).fill(0);
+
+            mapelData.forEach(siswa => {
+                siswa.pg.forEach((v, i) => totalPG[i] += v);
+                siswa.isian.forEach((v, i) => totalIsian[i] += v);
+            });
+
+            const tfoot = document.getElementById(`tfoot-${mapelId}`);
+            let html = `
+                <tr>
+                    <td colspan="2" class="border border-slate-300 px-4 py-3 text-right sticky left-0 bg-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Tingkat Kesukaran Soal (M/SD/S)</td>
+            `;
+
+            // PG Kesukaran (Max skor per soal = 1)
+            totalPG.forEach(sum => {
+                const rata = sum / (jmlSiswa * 1);
+                let lbl = rata > 0.70 ? 'M' : (rata > 0.30 ? 'SD' : 'S');
+                let color = lbl === 'S' ? 'text-red-600' : (lbl === 'M' ? 'text-green-600' : 'text-orange-500');
+                html += `<td class="border border-slate-300 py-2 text-center font-bold ${color}">${lbl}</td>`;
+            });
+
+            // Isian Kesukaran (Max skor per soal = 3)
+            totalIsian.forEach(sum => {
+                const rata = sum / (jmlSiswa * 3);
+                let lbl = rata > 0.70 ? 'M' : (rata > 0.30 ? 'SD' : 'S');
+                let color = lbl === 'S' ? 'text-red-600' : (lbl === 'M' ? 'text-green-600' : 'text-orange-500');
+                html += `<td class="border border-slate-300 py-2 text-center font-bold ${color}">${lbl}</td>`;
+            });
+
+            html += `<td colspan="2" class="border border-slate-300"></td></tr>`;
+            tfoot.innerHTML = html;
+        }
+
+        // ================= EKSPOR EXCEL ================= //
+        function eksporExcel(mapelId) {
+            const mapelName = AppData.mapels[mapelId].name;
+            const mapelData = AppData.mapels[mapelId].data;
+            const sekolah = document.getElementById('input-sekolah').value;
+            const judulAnalisis = document.getElementById('input-judul').value || "DAFTAR ANALISIS BUTIR SOAL";
+            
+            // Build Array of Array (AoA) for SheetJS
+            const wsData = [];
+            
+            // Header Identitas
+            wsData.push([`${judulAnalisis.toUpperCase()} - ${mapelName.toUpperCase()}`]);
+            wsData.push([`Sekolah`, sekolah]);
+            wsData.push([`Tahun Pelajaran`, document.getElementById('input-tapel').value]);
+            wsData.push([`Kelas / Semester`, `${document.getElementById('input-kelas').value} / ${document.getElementById('input-semester').value}`]);
+            wsData.push([]); // Empty row
+            
+            // Table Headers Row 1
+            const header1 = ["NO.", "Nama Siswa"];
+            for(let i=1; i<=10; i++) header1.push(`PG ${i}`);
+            for(let i=11; i<=15; i++) header1.push(`Isian ${i}`);
+            header1.push("Nilai Akhir", "Kategori");
+            wsData.push(header1);
+            
+            // Table Body
+            mapelData.forEach((siswa, index) => {
+                const row = [index + 1, siswa.nama];
+                siswa.pg.forEach(v => row.push(v));
+                siswa.isian.forEach(v => row.push(v));
+                row.push(siswa.nilai, siswa.kategori);
+                wsData.push(row);
+            });
+
+            // Tingkat Kesukaran (Calculate it here for export)
+            const jmlSiswa = mapelData.length;
+            const kesukaranRow = ["", "Tingkat Kesukaran"];
+            
+            let totalPG = Array(10).fill(0);
+            let totalIsian = Array(5).fill(0);
+            mapelData.forEach(siswa => {
+                siswa.pg.forEach((v, i) => totalPG[i] += v);
+                siswa.isian.forEach((v, i) => totalIsian[i] += v);
+            });
+
+            totalPG.forEach(sum => {
+                const rata = sum / (jmlSiswa * 1);
+                kesukaranRow.push(rata > 0.70 ? 'M' : (rata > 0.30 ? 'SD' : 'S'));
+            });
+            totalIsian.forEach(sum => {
+                const rata = sum / (jmlSiswa * 3);
+                kesukaranRow.push(rata > 0.70 ? 'M' : (rata > 0.30 ? 'SD' : 'S'));
+            });
+            kesukaranRow.push("", "");
+            wsData.push(kesukaranRow);
+
+            // Create Sheet and Download
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Analisis");
+            XLSX.writeFile(wb, `${judulAnalisis}_${mapelName}_${document.getElementById('input-kelas').value}.xlsx`);
+        }
+
+        // ================= EKSPOR PDF ================= //
+        function eksporPDF(mapelId) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('landscape', 'mm', 'a4'); // A4 Landscape
+            
+            const mapelName = AppData.mapels[mapelId].name;
+            const mapelData = AppData.mapels[mapelId].data;
+            const sekolah = document.getElementById('input-sekolah').value;
+            const kelas = document.getElementById('input-kelas').value;
+            const smt = document.getElementById('input-semester').value;
+            const judulAnalisis = document.getElementById('input-judul').value || "Analisis Butir Soal";
+            
+            // Header Text
+            doc.setFontSize(14);
+            doc.text(`${judulAnalisis} - ${mapelName}`, 14, 15);
+            doc.setFontSize(10);
+            doc.text(`${sekolah} | Kelas: ${kelas} | Semester: ${smt}`, 14, 21);
+            
+            // Prep Data for autoTable
+            const tableBody = [];
+            mapelData.forEach((siswa, idx) => {
+                const row = [idx + 1, siswa.nama, ...siswa.pg, ...siswa.isian, siswa.nilai, siswa.kategori];
+                tableBody.push(row);
+            });
+
+            doc.save(`${judulAnalisis}_${mapelName}_${kelas}.pdf`);
+        }
+
+        // Initialize default text area parsing
+        updateStudentList();
+    </script>
+</body>
+</html>
